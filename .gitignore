@@ -4,3 +4,5 @@ publish/*
 tools/*/*
 tools/*.exe
 tools/*.md5sum
+/.vs/*
+/HomeControl.csproj.user
