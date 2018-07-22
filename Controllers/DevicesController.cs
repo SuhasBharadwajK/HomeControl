@@ -20,7 +20,7 @@ namespace HomeControl.Controllers
         public DevicesController()
         {
             this.GpioController = Bifrost.Devices.Gpio.GpioController.Instance;
-            var pin = this.GpioController.OpenPin(this.pinId);
+            this.GpioPin = this.GpioController.OpenPin(this.pinId);
         }
 
         [HttpGet("state")]
