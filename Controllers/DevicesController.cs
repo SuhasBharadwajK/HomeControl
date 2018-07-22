@@ -1,14 +1,15 @@
 using Bifrost.Devices.Gpio;
 using Bifrost.Devices.Gpio.Abstractions;
 using Bifrost.Devices.Gpio.Core;
+using HomeControl.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HomeControl.Controllers
 {
     [Route("api/device")]
-    public class DevicesController : Controller
+    public class DevicesController : ControllerBase
     {
-        static bool IsDeviceOn;
+        static bool isDeviceOn;
         int pinId = 2;
 
         private IGpioController GpioController { get; set; }
@@ -23,9 +24,9 @@ namespace HomeControl.Controllers
         }
 
         [HttpGet("state")]
-        public dynamic GetDeviceState()
+        public dynamic GetDeviceState(bool isStateUpdated = false)
         {
-            return new { IsDeviceOn };
+            return new { isDeviceOn, isStateUpdated };
         }
 
         [HttpGet("toggle")]
@@ -33,7 +34,7 @@ namespace HomeControl.Controllers
         {
             this.GpioPin.SetDriveMode(GpioPinDriveMode.Output);
 
-            if (IsDeviceOn)
+            if (isDeviceOn)
             {
                 this.GpioPin.Write(GpioPinValue.Low);
             }
@@ -42,30 +43,28 @@ namespace HomeControl.Controllers
                 this.GpioPin.Write(GpioPinValue.High);
             }
 
-            IsDeviceOn = !IsDeviceOn;
-            return this.GetDeviceState();
+            isDeviceOn = !isDeviceOn;
+            return Ok(this.GetDeviceState(true));
         }
 
-        [HttpPost("on")]
-        public dynamic SwitchOnDevice()
+        [HttpPost("switch")]
+        public dynamic SwitchOnDevice([FromBody]DeviceRequest deviceRequest)
         {
-            if (!IsDeviceOn)
+            var isStateUpdated = false;
+            if (deviceRequest.requestedState.ToLower() == "on" && !isDeviceOn)
             {
                 this.GpioPin.Write(GpioPinValue.High);
+                isDeviceOn = true;
+                isStateUpdated = true;
             }
-
-            return this.GetDeviceState();
-        }
-
-        [HttpPost("post")]
-        public dynamic SwitchOffDevice()
-        {
-            if (IsDeviceOn)
+            else if (deviceRequest.requestedState.ToLower() == "off" && isDeviceOn)
             {
                 this.GpioPin.Write(GpioPinValue.Low);
+                isDeviceOn = false;
+                isStateUpdated = true;
             }
 
-            return this.GetDeviceState();
+            return Ok(this.GetDeviceState(isStateUpdated));
         }
     }
 }
