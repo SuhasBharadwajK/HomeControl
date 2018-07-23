@@ -3,6 +3,7 @@ using Bifrost.Devices.Gpio.Abstractions;
 using Bifrost.Devices.Gpio.Core;
 using HomeControl.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 
 namespace HomeControl.Controllers
 {
@@ -13,27 +14,32 @@ namespace HomeControl.Controllers
         int pinId = 2;
         GpioPinValue high;
         GpioPinValue low;
-        bool isRelay = true; // Set this value to false if the circuit being used with the Pi is not a relay.
 
         private IGpioController GpioController { get; set; }
 
         private IGpioPin GpioPin { get; set; }
 
+        private readonly IConfiguration _configuration;
 
-        public DevicesController()
+
+        public DevicesController(IConfiguration configuration)
         {
+            this._configuration = configuration;
+
             // This condition is used to check if a relay is used with the Raspberry Pi.
             // A relay behaves differently from a regular circuit in that relay is 
             // triggered on when the GPIO output is LOW and vice versa.
-            if (isRelay)
-            {
-                high = GpioPinValue.Low;
-                low = GpioPinValue.High;
-            }
-            else
+            // The relay is enabled by default, if no command line parameter is given.
+            var disableRelay = this._configuration["disable-relay"];
+            if (!string.IsNullOrEmpty(disableRelay) && disableRelay == "true")
             {
                 high = GpioPinValue.High;
                 low = GpioPinValue.Low;
+            }
+            else
+            {
+                high = GpioPinValue.Low;
+                low = GpioPinValue.High;
             }
 
             this.GpioController = Bifrost.Devices.Gpio.GpioController.Instance;

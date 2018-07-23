@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore;
+﻿using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace HomeControl
 {
@@ -21,6 +15,10 @@ namespace HomeControl
             WebHost.CreateDefaultBuilder(args)
                 .UseStartup("HomeControl")
                 .UseUrls("http://*:5000") // add this line
+                .ConfigureAppConfiguration((hostingContext, config) =>
+                {
+                    config.AddCommandLine(args);
+                })
                 .Build();
     }
 }
