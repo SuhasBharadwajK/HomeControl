@@ -11,6 +11,9 @@ namespace HomeControl.Controllers
     {
         static bool isDeviceOn;
         int pinId = 2;
+        GpioPinValue high;
+        GpioPinValue low;
+        bool isRelay = true; // Set this value to false if the circuit being used with the Pi is not a relay.
 
         private IGpioController GpioController { get; set; }
 
@@ -19,8 +22,24 @@ namespace HomeControl.Controllers
 
         public DevicesController()
         {
+            // This condition is used to check if a relay is used with the Raspberry Pi.
+            // A relay behaves differently from a regular circuit in that relay is 
+            // triggered on when the GPIO output is LOW and vice versa.
+            if (isRelay)
+            {
+                high = GpioPinValue.Low;
+                low = GpioPinValue.High;
+            }
+            else
+            {
+                high = GpioPinValue.High;
+                low = GpioPinValue.Low;
+            }
+
             this.GpioController = Bifrost.Devices.Gpio.GpioController.Instance;
             this.GpioPin = this.GpioController.OpenPin(this.pinId);
+            this.GpioPin.SetDriveMode(GpioPinDriveMode.Output);
+            this.GpioPin.Write(high);
         }
 
         [HttpGet("state")]
@@ -32,15 +51,13 @@ namespace HomeControl.Controllers
         [HttpGet("toggle")]
         public dynamic ToggleDevice()
         {
-            this.GpioPin.SetDriveMode(GpioPinDriveMode.Output);
-
             if (isDeviceOn)
             {
-                this.GpioPin.Write(GpioPinValue.Low);
+                this.GpioPin.Write(low);
             }
             else
             {
-                this.GpioPin.Write(GpioPinValue.High);
+                this.GpioPin.Write(high);
             }
 
             isDeviceOn = !isDeviceOn;
@@ -50,16 +67,21 @@ namespace HomeControl.Controllers
         [HttpPost("switch")]
         public dynamic SwitchOnDevice([FromBody]DeviceRequest deviceRequest)
         {
+            if (deviceRequest == null || string.IsNullOrEmpty(deviceRequest.requestedState))
+            {
+                return NoContent();
+            }
+
             var isStateUpdated = false;
             if (deviceRequest.requestedState.ToLower() == "on" && !isDeviceOn)
             {
-                this.GpioPin.Write(GpioPinValue.High);
+                this.GpioPin.Write(high);
                 isDeviceOn = true;
                 isStateUpdated = true;
             }
             else if (deviceRequest.requestedState.ToLower() == "off" && isDeviceOn)
             {
-                this.GpioPin.Write(GpioPinValue.Low);
+                this.GpioPin.Write(low);
                 isDeviceOn = false;
                 isStateUpdated = true;
             }
